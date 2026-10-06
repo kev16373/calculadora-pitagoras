@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pythagoras Engine | Advanced Geometry Calculator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #090d16;
+            --surface: #111827;
+            --surface-card: #1f2937;
+            --border: rgba(255, 255, 255, 0.08);
+            --border-focus: #38bdf8;
+            --primary: #38bdf8;
+            --primary-gradient: linear-gradient(135deg, #38bdf8 0%, #6366f1 100%);
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --accent-glow: rgba(56, 189, 248, 0.15);
+            --error: #fb7185;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 24px;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(56, 189, 248, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(99, 102, 241, 0.05) 0%, transparent 40%);
+        }
+
+        .workspace {
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            gap: 24px;
+            width: 100%;
+            max-width: 960px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 32px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        @media (max-width: 768px) {
+            .workspace {
+                grid-template-columns: 1fr;
+                padding: 20px;
+            }
+        }
+
+        /* Panel Izquierdo: Controles y Resultados */
+        .panel-left {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .header-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--primary-gradient);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: #000;
+            font-size: 1.2rem;
+            box-shadow: 0 0 20px var(--accent-glow);
+        }
+
+        .header-brand h1 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .header-brand p {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .mode-selector {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            background: var(--surface-card);
+            padding: 4px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .mode-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 10px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .mode-btn.active {
+            background: var(--primary-gradient);
+            color: #090d16;
+            box-shadow: 0 4px 12px rgba(56, 189, 248, 0.3);
+        }
+
+        .inputs-container {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .input-group label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--text-muted);
+        }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-wrapper input {
+            width: 100%;
+            background: var(--surface-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px 16px;
+            color: var(--text-main);
+            font-size: 1rem;
+            font-family: 'Fira Code', monospace;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .input-wrapper input:focus {
+            border-color: var(--border-focus);
+            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.1);
+        }
+
+        .input-unit {
+            position: absolute;
+            right: 16px;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            pointer-events: none;
+        }
+
+        .error-text {
+            font-size: 0.75rem;
+            color: var(--error);
+            display: none;
+            margin-top: 2px;
+        }
+
+        /* Panel Derecho: Visualizador Canvas y Salida */
+        .panel-right {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            background: rgba(17, 24, 39, 0.5);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 20px;
+        }
+
+        .canvas-container {
+            width: 100%;
+            height: 200px;
+            background: var(--bg);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        .output-card {
+            background: var(--surface-card);
+            border-radius: 12px;
+            padding: 16px;
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .output-header {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--primary);
+            font-weight: 700;
+        }
+
+        .output-value {
+            font-size: 1.6rem;
+            font-weight: 700;
+            font-family: 'Fira Code', monospace;
+            color: var(--text-main);
+        }
+
+        .steps-box {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+            border-top: 1px solid var(--border);
+            padding-top: 10px;
+            max-height: 120px;
+            overflow-y: auto;
+        }
+
+        .placeholder-state {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin: auto;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="workspace">
+        <!-- Panel Izquierdo -->
+        <div class="panel-left">
+            <div class="header-brand">
+                <div class="brand-icon">Δ</div>
+                <div>
+                    <h1>Pythagoras Engine</h1>
+                    <p>Resolución geométrica interactiva</p>
+                </div>
+            </div>
+
+            <div class="mode-selector">
+                <button class="mode-btn active" id="btnC" onclick="setMode('c')">Hipotenusa</button>
+                <button class="mode-btn" id="btnA" onclick="setMode('a')">Cateto A</button>
+                <button class="mode-btn" id="btnB" onclick="setMode('b')">Cateto B</button>
+            </div>
+
+            <div class="inputs-container">
+                <div class="input-group" id="group1">
+                    <label id="label1">Cateto A</label>
+                    <div class="input-wrapper">
+                        <input type="number" id="val1" placeholder="0.00" step="any" oninput="calcular()">
+                        <span class="input-unit">un</span>
+                    </div>
+                    <span class="error-text" id="error1">Valor requerido mayor a 0</span>
+                </div>
+
+                <div class="input-group" id="group2">
+                    <label id="label2">Cateto B</label>
+                    <div class="input-wrapper">
+                        <input type="number" id="val2" placeholder="0.00" step="any" oninput="calcular()">
+                        <span class="input-unit">un</span>
+                    </div>
+                    <span class="error-text" id="error2">Valor requerido mayor a 0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel Derecho -->
+        <div class="panel-right">
+            <div class="canvas-container">
+                <canvas id="triangleCanvas" width="300" height="180"></canvas>
+            </div>
+
+            <div class="output-card">
+                <div class="output-header" id="outputLabel">Resultado de Hipotenusa (c)</div>
+                <div class="output-value" id="mainOutput">—</div>
+                <div class="steps-box" id="stepsOutput">
+                    <span class="placeholder-state">Ingresa valores válidos para generar cálculo y renderizado.</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentMode = 'c';
+
+        function setMode(mode) {
+            currentMode = mode;
+            document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('btn' + mode.toUpperCase()).classList.add('active');
+
+            const label1 = document.getElementById('label1');
+            const label2 = document.getElementById('label2');
+            const outputLabel = document.getElementById('outputLabel');
+
+            document.getElementById('val1').value = '';
+            document.getElementById('val2').value = '';
+
+            if (mode === 'c') {
+                label1.innerText = 'Cateto A';
+                label2.innerText = 'Cateto B';
+                outputLabel.innerText = 'Resultado de Hipotenusa (c)';
+            } else if (mode === 'a') {
+                label1.innerText = 'Hipotenusa (c)';
+                label2.innerText = 'Cateto B';
+                outputLabel.innerText = 'Resultado de Cateto (a)';
+            } else if (mode === 'b') {
+                label1.innerText = 'Hipotenusa (c)';
+                label2.innerText = 'Cateto A';
+                outputLabel.innerText = 'Resultado de Cateto (b)';
+            }
+
+            calcular();
+        }
+
+        function calcular() {
+            const v1 = parseFloat(document.getElementById('val1').value);
+            const v2 = parseFloat(document.getElementById('val2').value);
+            const mainOutput = document.getElementById('mainOutput');
+            const stepsOutput = document.getElementById('stepsOutput');
+
+            if (isNaN(v1) || isNaN(v2) || v1 <= 0 || v2 <= 0) {
+                mainOutput.innerText = '—';
+                stepsOutput.innerHTML = '<span class="placeholder-state">Ingresa valores válidos para generar cálculo y renderizado.</span>';
+                dibujarTriangulo(0, 0);
+                return;
+            }
+
+            let a = 0, b = 0, c = 0;
+            let pasos = "";
+
+            if (currentMode === 'c') {
+                a = v1;
+                b = v2;
+                c = Math.sqrt(a * a + b * b);
+                pasos = `c = √(a² + b²)<br>c = √(${a}² + ${b}²)<br>c = √(${(a*a).toFixed(2)} + ${(b*b).toFixed(2)})<br><strong>c = ${c.toFixed(4)}</strong>`;
+            } else if (currentMode === 'a') {
+                c = v1;
+                b = v2;
+                if (c <= b) {
+                    mainOutput.innerText = 'Error';
+                    stepsOutput.innerHTML = '<span style="color: var(--error);">La hipotenusa debe ser mayor al cateto.</span>';
+                    dibujarTriangulo(0, 0);
+                    return;
+                }
+                a = Math.sqrt(c * c - b * b);
+                pasos = `a = √(c² - b²)<br>a = √(${c}² - ${b}²)<br>a = √(${(c*c).toFixed(2)} - ${(b*b).toFixed(2)})<br><strong>a = ${a.toFixed(4)}</strong>`;
+            } else if (currentMode === 'b') {
+                c = v1;
+                a = v2;
+                if (c <= a) {
+                    mainOutput.innerText = 'Error';
+                    stepsOutput.innerHTML = '<span style="color: var(--error);">La hipotenusa debe ser mayor al cateto.</span>';
+                    dibujarTriangulo(0, 0);
+                    return;
+                }
+                b = Math.sqrt(c * c - a * a);
+                pasos = `b = √(c² - a²)<br>b = √(${c}² - ${a}²)<br>b = √(${(c*c).toFixed(2)} - ${(a*a).toFixed(2)})<br><strong>b = ${b.toFixed(4)}</strong>`;
+            }
+
+            mainOutput.innerText = currentMode === 'c' ? c.toFixed(4) : (currentMode === 'a' ? a.toFixed(4) : b.toFixed(4));
+            stepsOutput.innerHTML = pasos;
+
+            dibujarTriangulo(a, b);
+        }
+
+        function dibujarTriangulo(a, b) {
+            const canvas = document.getElementById('triangleCanvas');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (a === 0 || b === 0) {
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([4, 4]);
+                ctx.beginPath();
+                ctx.moveTo(40, 140);
+                ctx.lineTo(260, 140);
+                ctx.lineTo(40, 40);
+                ctx.closePath();
+                ctx.stroke();
+                return;
+            }
+
+            // Escalar dimensiones al espacio del canvas (padding de 40px)
+            const maxW = 220;
+            const maxH = 120;
+            const scale = Math.min(maxW / b, maxH / a);
+
+            const wPx = b * scale;
+            const hPx = a * scale;
+
+            const startX = 50;
+            const startY = 150;
+
+            // Dibujar área de sombra bajo el triángulo
+            ctx.fillStyle = 'rgba(56, 189, 248, 0.05)';
+            ctx.beginPath();
+            ctx.moveTo(startX, startY);
+            ctx.lineTo(startX + wPx, startY);
+            ctx.lineTo(startX, startY - hPx);
+            ctx.closePath();
+            ctx.fill();
+
+            // Líneas del triángulo
+            ctx.strokeStyle = '#38bdf8';
+            ctx.lineWidth = 2.5;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.setLineDash([]);
+            ctx.beginPath();
+            ctx.moveTo(startX, startY);
+            ctx.lineTo(startX + wPx, startY); // Cateto b (base)
+            ctx.lineTo(startX, startY - hPx); // Cateto a (altura)
+            ctx.closePath();
+            ctx.stroke();
+
+            // Ángulo recto (esquina inferior izquierda)
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(startX, startY - 14, 14, 14);
+
+            // Etiquetas en el canvas
+            ctx.fillStyle = '#9ca3af';
+            ctx.font = '11px "Plus Jakarta Sans", sans-serif';
+            ctx.fillText('a', startX - 16, startY - (hPx / 2));
+            ctx.fillText('b', startX + (wPx / 2) - 4, startY + 16);
+            ctx.fillText('c', startX + (wPx / 2) + 8, startY - (hPx / 2) - 4);
+        }
+
+        // Inicializar canvas vacío
+        dibujarTriangulo(0, 0);
+    </script>
+</body>
+</html>
